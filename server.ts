@@ -1,8 +1,8 @@
 import path from 'path'
 import express from 'express'
 import compression from 'compression'
-import morgan from 'morgan'
 import { createRequestHandler } from '@remix-run/express'
+import { pino, baseLogger } from './app/pino.server'
 
 const app = express()
 
@@ -63,7 +63,7 @@ app.use(
 // more aggressive with this caching.
 app.use(express.static('public', { maxAge: '1h' }))
 
-app.use(morgan('tiny'))
+app.use(pino)
 
 const MODE = process.env.NODE_ENV
 const BUILD_DIR = path.join(process.cwd(), 'build')
@@ -87,7 +87,7 @@ const port = process.env.PORT || 3000
 app.listen(port, () => {
   // require the built app so we're ready when the first request comes in
   require(BUILD_DIR)
-  console.log(`✅ app ready: http://localhost:${port}`)
+  baseLogger.info(`✅ app ready: http://localhost:${port}`)
 })
 
 function purgeRequireCache() {
