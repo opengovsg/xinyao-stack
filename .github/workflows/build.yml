@@ -114,3 +114,12 @@ jobs:
           wait-on: 'http://localhost:8811'
         env:
           PORT: '8811'
+
+  build-docker:
+    name: Build Docker image
+    runs-on: ubuntu-latest
+    if: github.repository == 'opengovsg/xinyao-stack'
+    steps:
+      - uses: actions/checkout@v2
+      - run: npm install
+      - run: docker build -t ${{ steps.extract-tag.outputs.tag }} -f Dockerfile .
