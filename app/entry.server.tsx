@@ -7,17 +7,17 @@ import { renderToPipeableStream } from 'react-dom/server'
 
 const ABORT_DELAY = 5000
 
-export default function handleRequest(
+export default async function handleRequest (
   request: Request,
   responseStatusCode: number,
   responseHeaders: Headers,
-  remixContext: EntryContext,
-) {
+  remixContext: EntryContext
+): Promise<unknown> {
   const callbackName = isbot(request.headers.get('user-agent'))
     ? 'onAllReady'
     : 'onShellReady'
 
-  return new Promise((resolve, reject) => {
+  return await new Promise((resolve, reject) => {
     let didError = false
 
     const { pipe, abort } = renderToPipeableStream(
@@ -31,8 +31,8 @@ export default function handleRequest(
           resolve(
             new Response(body, {
               headers: responseHeaders,
-              status: didError ? 500 : responseStatusCode,
-            }),
+              status: didError ? 500 : responseStatusCode
+            })
           )
 
           pipe(body)
@@ -44,8 +44,8 @@ export default function handleRequest(
           didError = true
 
           console.error(error)
-        },
-      },
+        }
+      }
     )
 
     setTimeout(abort, ABORT_DELAY)

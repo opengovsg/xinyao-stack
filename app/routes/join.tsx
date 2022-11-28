@@ -1,4 +1,4 @@
-import type { ActionArgs, LoaderArgs, MetaFunction } from '@remix-run/node'
+import type { ActionArgs, LoaderArgs, MetaFunction, TypedResponse } from '@remix-run/node'
 import { json, redirect } from '@remix-run/node'
 import { Form, Link, useActionData, useSearchParams } from '@remix-run/react'
 import * as React from 'react'
@@ -8,13 +8,23 @@ import { createUserSession, getUserId } from '~/session.server'
 import { createUser, getUserByEmail } from '~/models/user.server'
 import { safeRedirect, validateEmail } from '~/utils'
 
-export async function loader({ request }: LoaderArgs) {
+export async function loader ({ request }: LoaderArgs): Promise<TypedResponse<{}>> {
   const userId = await getUserId(request)
-  if (userId) return redirect('/')
+  if (userId !== undefined && userId !== '') return redirect('/')
   return json({})
 }
 
-export async function action({ request }: ActionArgs) {
+export async function action ({ request }: ActionArgs): Promise<TypedResponse<{
+  errors: {
+    email: string
+    password: null
+  }
+}> | TypedResponse<{
+  errors: {
+    email: null
+    password: string
+  }
+}>> {
   const formData = await request.formData()
   const email = formData.get('email')
   const password = formData.get('password')
@@ -23,95 +33,96 @@ export async function action({ request }: ActionArgs) {
   if (!validateEmail(email)) {
     return json(
       { errors: { email: 'Email is invalid', password: null } },
-      { status: 400 },
+      { status: 400 }
     )
   }
 
   if (typeof password !== 'string' || password.length === 0) {
     return json(
       { errors: { email: null, password: 'Password is required' } },
-      { status: 400 },
+      { status: 400 }
     )
   }
 
   if (password.length < 8) {
     return json(
       { errors: { email: null, password: 'Password is too short' } },
-      { status: 400 },
+      { status: 400 }
     )
   }
 
   const existingUser = await getUserByEmail(email)
-  if (existingUser) {
+  if (existingUser != null) {
     return json(
       {
         errors: {
           email: 'A user already exists with this email',
-          password: null,
-        },
+          password: null
+        }
       },
-      { status: 400 },
+      { status: 400 }
     )
   }
 
   const user = await createUser(email, password)
 
-  return createUserSession({
+  return await createUserSession({
     request,
     userId: user.id,
     remember: false,
-    redirectTo,
+    redirectTo
   })
 }
 
 export const meta: MetaFunction = () => {
   return {
-    title: 'Sign Up',
+    title: 'Sign Up'
   }
 }
 
-export default function Join() {
+export default function Join (): JSX.Element {
   const [searchParams] = useSearchParams()
   const redirectTo = searchParams.get('redirectTo') ?? undefined
   const actionData = useActionData<typeof action>()
   const emailRef = React.useRef<HTMLInputElement>(null)
   const passwordRef = React.useRef<HTMLInputElement>(null)
+  const errors = actionData?.errors
 
   React.useEffect(() => {
-    if (actionData?.errors?.email) {
+    if (errors?.email !== undefined && errors?.email !== '') {
       emailRef.current?.focus()
-    } else if (actionData?.errors?.password) {
+    } else if (errors?.password !== undefined && errors?.password !== '') {
       passwordRef.current?.focus()
     }
   }, [actionData])
 
   return (
-    <div className="flex min-h-full flex-col justify-center">
-      <div className="mx-auto w-full max-w-md px-8">
-        <Form method="post" className="space-y-6" noValidate>
+    <div className='flex min-h-full flex-col justify-center'>
+      <div className='mx-auto w-full max-w-md px-8'>
+        <Form method='post' className='space-y-6' noValidate>
           <div>
             <label
-              htmlFor="email"
-              className="block text-sm font-medium text-gray-700"
+              htmlFor='email'
+              className='block text-sm font-medium text-gray-700'
             >
               Email address
             </label>
-            <div className="mt-1">
+            <div className='mt-1'>
               <input
                 ref={emailRef}
-                id="email"
+                id='email'
                 required
-                autoFocus={true}
-                name="email"
-                type="email"
-                autoComplete="email"
-                aria-invalid={actionData?.errors?.email ? true : undefined}
-                aria-describedby="email-error"
-                className="w-full rounded border border-gray-500 px-2 py-1 text-lg"
+                autoFocus
+                name='email'
+                type='email'
+                autoComplete='email'
+                aria-invalid={errors?.email !== undefined && errors?.email !== '' ? true : undefined}
+                aria-describedby='email-error'
+                className='w-full rounded border border-gray-500 px-2 py-1 text-lg'
               />
-              {actionData?.errors?.email && (
-                <div className="pt-1 text-red-700" id="email-error">
-                  {actionData.errors.email}
+              {errors?.email !== undefined && errors?.email !== '' && (
+                <div className='pt-1 text-red-700' id='email-error'>
+                  {errors.email}
                 </div>
               )}
             </div>
@@ -119,45 +130,45 @@ export default function Join() {
 
           <div>
             <label
-              htmlFor="password"
-              className="block text-sm font-medium text-gray-700"
+              htmlFor='password'
+              className='block text-sm font-medium text-gray-700'
             >
               Password
             </label>
-            <div className="mt-1">
+            <div className='mt-1'>
               <input
-                id="password"
+                id='password'
                 ref={passwordRef}
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                aria-invalid={actionData?.errors?.password ? true : undefined}
-                aria-describedby="password-error"
-                className="w-full rounded border border-gray-500 px-2 py-1 text-lg"
+                name='password'
+                type='password'
+                autoComplete='new-password'
+                aria-invalid={errors?.password !== undefined && errors?.password !== '' ? true : undefined}
+                aria-describedby='password-error'
+                className='w-full rounded border border-gray-500 px-2 py-1 text-lg'
               />
-              {actionData?.errors?.password && (
-                <div className="pt-1 text-red-700" id="password-error">
-                  {actionData.errors.password}
+              {errors?.password !== undefined && errors?.password !== '' && (
+                <div className='pt-1 text-red-700' id='password-error'>
+                  {errors.password}
                 </div>
               )}
             </div>
           </div>
 
-          <input type="hidden" name="redirectTo" value={redirectTo} />
+          <input type='hidden' name='redirectTo' value={redirectTo} />
           <button
-            type="submit"
-            className="w-full rounded bg-blue-500  py-2 px-4 text-white hover:bg-blue-600 focus:bg-blue-400"
+            type='submit'
+            className='w-full rounded bg-blue-500  py-2 px-4 text-white hover:bg-blue-600 focus:bg-blue-400'
           >
             Create Account
           </button>
-          <div className="flex items-center justify-center">
-            <div className="text-center text-sm text-gray-500">
+          <div className='flex items-center justify-center'>
+            <div className='text-center text-sm text-gray-500'>
               Already have an account?{' '}
               <Link
-                className="text-blue-500 underline"
+                className='text-blue-500 underline'
                 to={{
                   pathname: '/login',
-                  search: searchParams.toString(),
+                  search: searchParams.toString()
                 }}
               >
                 Log in

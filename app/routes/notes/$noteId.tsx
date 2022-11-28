@@ -1,4 +1,4 @@
-import type { ActionArgs, LoaderArgs } from '@remix-run/node'
+import type { ActionArgs, LoaderArgs, TypedResponse } from '@remix-run/node'
 import { json, redirect } from '@remix-run/node'
 import { Form, useCatch, useLoaderData } from '@remix-run/react'
 import invariant from 'tiny-invariant'
@@ -6,18 +6,25 @@ import invariant from 'tiny-invariant'
 import { deleteNote, getNote } from '~/models/note.server'
 import { requireUserId } from '~/session.server'
 
-export async function loader({ request, params }: LoaderArgs) {
+export async function loader ({ request, params }: LoaderArgs): Promise<TypedResponse<{
+  note: {
+    id: string
+    body: string
+    title: string
+  }
+}>> {
   const userId = await requireUserId(request)
   invariant(params.noteId, 'noteId not found')
 
   const note = await getNote({ userId, id: params.noteId })
-  if (!note) {
+  if (note == null) {
+    // eslint-disable-next-line @typescript-eslint/no-throw-literal
     throw new Response('Not Found', { status: 404 })
   }
   return json({ note })
 }
 
-export async function action({ request, params }: ActionArgs) {
+export async function action ({ request, params }: ActionArgs): Promise<TypedResponse<never>> {
   const userId = await requireUserId(request)
   invariant(params.noteId, 'noteId not found')
 
@@ -26,18 +33,18 @@ export async function action({ request, params }: ActionArgs) {
   return redirect('/notes')
 }
 
-export default function NoteDetailsPage() {
+export default function NoteDetailsPage (): JSX.Element {
   const data = useLoaderData<typeof loader>()
 
   return (
     <div>
-      <h3 className="text-2xl font-bold">{data.note.title}</h3>
-      <p className="py-6">{data.note.body}</p>
-      <hr className="my-4" />
-      <Form method="post">
+      <h3 className='text-2xl font-bold'>{data.note.title}</h3>
+      <p className='py-6'>{data.note.body}</p>
+      <hr className='my-4' />
+      <Form method='post'>
         <button
-          type="submit"
-          className="rounded bg-blue-500  py-2 px-4 text-white hover:bg-blue-600 focus:bg-blue-400"
+          type='submit'
+          className='rounded bg-blue-500  py-2 px-4 text-white hover:bg-blue-600 focus:bg-blue-400'
         >
           Delete
         </button>
@@ -46,13 +53,13 @@ export default function NoteDetailsPage() {
   )
 }
 
-export function ErrorBoundary({ error }: { error: Error }) {
+export function ErrorBoundary ({ error }: { error: Error }): JSX.Element {
   console.error(error)
 
   return <div>An unexpected error occurred: {error.message}</div>
 }
 
-export function CatchBoundary() {
+export function CatchBoundary (): JSX.Element {
   const caught = useCatch()
 
   if (caught.status === 404) {

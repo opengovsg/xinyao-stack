@@ -2,18 +2,18 @@ import { RemixBrowser } from '@remix-run/react'
 import { startTransition, StrictMode } from 'react'
 import { hydrateRoot } from 'react-dom/client'
 
-const hydrate = () => {
+const hydrate = (): void => {
   startTransition(() => {
     hydrateRoot(
       document,
       <StrictMode>
         <RemixBrowser />
-      </StrictMode>,
+      </StrictMode>
     )
   })
 }
 
-if (window.requestIdleCallback) {
+if (window.requestIdleCallback !== undefined && window.requestIdleCallback !== null) {
   window.requestIdleCallback(hydrate)
 } else {
   // Safari doesn't support requestIdleCallback

@@ -1,10 +1,10 @@
 import { Link } from '@remix-run/react'
 
-export default function NoteIndexPage() {
+export default function NoteIndexPage (): JSX.Element {
   return (
     <p>
       No note selected. Select a note on the left, or{' '}
-      <Link to="new" className="text-blue-500 underline">
+      <Link to='new' className='text-blue-500 underline'>
         create a new note.
       </Link>
     </p>

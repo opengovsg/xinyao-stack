@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
-async function seed() {
+async function seed (): Promise<void> {
   const email = 'rachel@remix.run'
 
   // cleanup the existing database
@@ -18,29 +18,29 @@ async function seed() {
       email,
       password: {
         create: {
-          hash: hashedPassword,
-        },
-      },
-    },
+          hash: hashedPassword
+        }
+      }
+    }
   })
 
   await prisma.note.create({
     data: {
       title: 'My first note',
       body: 'Hello, world!',
-      userId: user.id,
-    },
+      userId: user.id
+    }
   })
 
   await prisma.note.create({
     data: {
       title: 'My second note',
       body: 'Hello, world!',
-      userId: user.id,
-    },
+      userId: user.id
+    }
   })
 
-  console.log(`Database has been seeded. 🌱`)
+  console.log('Database has been seeded. 🌱')
 }
 
 seed()
@@ -48,6 +48,6 @@ seed()
     console.error(e)
     process.exit(1)
   })
-  .finally(async () => {
-    await prisma.$disconnect()
+  .finally(() => {
+    void prisma.$disconnect()
   })

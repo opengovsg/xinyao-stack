@@ -12,11 +12,11 @@ const DEFAULT_REDIRECT = '/'
  * @param {string} to The redirect destination
  * @param {string} defaultRedirect The redirect to use if the to is unsafe.
  */
-export function safeRedirect(
+export function safeRedirect (
   to: FormDataEntryValue | string | null | undefined,
-  defaultRedirect: string = DEFAULT_REDIRECT,
-) {
-  if (!to || typeof to !== 'string') {
+  defaultRedirect: string = DEFAULT_REDIRECT
+): string {
+  if (to === undefined || to === null || typeof to !== 'string') {
     return defaultRedirect
   }
 
@@ -33,39 +33,39 @@ export function safeRedirect(
  * @param {string} id The route id
  * @returns {JSON|undefined} The router data or undefined if not found
  */
-export function useMatchesData(
-  id: string,
+export function useMatchesData (
+  id: string
 ): Record<string, unknown> | undefined {
   const matchingRoutes = useMatches()
   const route = useMemo(
     () => matchingRoutes.find((route) => route.id === id),
-    [matchingRoutes, id],
+    [matchingRoutes, id]
   )
   return route?.data
 }
 
-function isUser(user: any): user is User {
-  return user && typeof user === 'object' && typeof user.email === 'string'
+function isUser (user: any): user is User {
+  return user !== undefined && user !== null && typeof user.email === 'string'
 }
 
-export function useOptionalUser(): User | undefined {
+export function useOptionalUser (): User | undefined {
   const data = useMatchesData('root')
-  if (!data || !isUser(data.user)) {
+  if ((data === null) || (data === undefined) || !isUser(data.user)) {
     return undefined
   }
   return data.user
 }
 
-export function useUser(): User {
+export function useUser (): User {
   const maybeUser = useOptionalUser()
-  if (!maybeUser) {
+  if (maybeUser == null) {
     throw new Error(
-      'No user found in root loader, but user is required by useUser. If user is optional, try useOptionalUser instead.',
+      'No user found in root loader, but user is required by useUser. If user is optional, try useOptionalUser instead.'
     )
   }
   return maybeUser
 }
 
-export function validateEmail(email: unknown): email is string {
+export function validateEmail (email: unknown): email is string {
   return typeof email === 'string' && email.length > 3 && email.includes('@')
 }

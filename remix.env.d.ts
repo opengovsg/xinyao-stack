@@ -1,2 +1,2 @@
-/// <reference types="@remix-run/dev" />
-/// <reference types="@remix-run/node/globals" />
+import '@remix-run/dev'
+import '@remix-run/node/globals'

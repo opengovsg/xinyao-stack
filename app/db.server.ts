@@ -4,6 +4,7 @@ import invariant from 'tiny-invariant'
 let prisma: PrismaClient
 
 declare global {
+  // eslint-disable-next-line
   var __db__: PrismaClient
 }
 
@@ -14,13 +15,20 @@ declare global {
 if (process.env.NODE_ENV === 'production') {
   prisma = getClient()
 } else {
+  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
   if (!global.__db__) {
     global.__db__ = getClient()
   }
   prisma = global.__db__
 }
 
-function getClient() {
+function getClient (): PrismaClient<{
+  datasources: {
+    db: {
+      url: string
+    }
+  }
+}, never, false> {
   const { DATABASE_URL } = process.env
   invariant(typeof DATABASE_URL === 'string', 'DATABASE_URL env var not set')
 
@@ -31,9 +39,9 @@ function getClient() {
   const PRIMARY_REGION = isLocalHost ? null : process.env.PRIMARY_REGION
   const FLY_REGION = isLocalHost ? null : process.env.FLY_REGION
 
-  const isReadReplicaRegion = !PRIMARY_REGION || PRIMARY_REGION === FLY_REGION
+  const isReadReplicaRegion = [undefined, null, ''].includes(PRIMARY_REGION) || PRIMARY_REGION === FLY_REGION
 
-  if (!isLocalHost) {
+  if (!isLocalHost && typeof FLY_REGION === 'string') {
     databaseUrl.host = `${FLY_REGION}.${databaseUrl.host}`
     if (!isReadReplicaRegion) {
       // 5433 is the read-replica port
@@ -49,12 +57,12 @@ function getClient() {
   const client = new PrismaClient({
     datasources: {
       db: {
-        url: databaseUrl.toString(),
-      },
-    },
+        url: databaseUrl.toString()
+      }
+    }
   })
   // connect eagerly
-  client.$connect()
+  void client.$connect()
 
   return client
 }

@@ -7,8 +7,8 @@ export default defineConfig({
       const port = process.env.PORT ?? (isDev ? '3000' : '8811')
       const configOverrides: Partial<Cypress.PluginConfigOptions> = {
         baseUrl: `http://localhost:${port}`,
-        video: !process.env.CI,
-        screenshotOnRunFailure: !process.env.CI,
+        video: process.env.CI === undefined || process.env.CI === '',
+        screenshotOnRunFailure: process.env.CI === undefined || process.env.CI === ''
       }
 
       // To use this:
@@ -18,10 +18,10 @@ export default defineConfig({
           console.log(message)
 
           return null
-        },
+        }
       })
 
       return { ...config, ...configOverrides }
-    },
-  },
+    }
+  }
 })

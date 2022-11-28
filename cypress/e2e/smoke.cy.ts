@@ -8,7 +8,7 @@ describe('smoke tests', () => {
   it('should allow you to register and login', () => {
     const loginForm = {
       email: `${faker.internet.userName()}@example.com`,
-      password: faker.internet.password(),
+      password: faker.internet.password()
     }
     cy.then(() => ({ email: loginForm.email })).as('user')
 
@@ -27,7 +27,7 @@ describe('smoke tests', () => {
   it('should allow you to make a note', () => {
     const testNote = {
       title: faker.lorem.words(1),
-      body: faker.lorem.sentences(1),
+      body: faker.lorem.sentences(1)
     }
     cy.login()
     cy.visitAndCheck('/')

@@ -1,5 +1,5 @@
 import path from 'path'
-import express from 'express'
+import express, { RequestHandler } from 'express'
 import compression from 'compression'
 import { createRequestHandler } from '@remix-run/express'
 import { pino, baseLogger } from './app/pino.server'
@@ -25,13 +25,15 @@ app.use((req, res, next) => {
 // non-GET/HEAD/OPTIONS requests hit the primary region rather than read-only
 // Postgres DBs.
 // learn more: https://fly.io/docs/getting-started/multi-region-databases/#replay-the-request
-app.all('*', function getReplayResponse(req, res, next) {
+app.all('*', function getReplayResponse (req, res, next) {
   const { method, path: pathname } = req
   const { PRIMARY_REGION, FLY_REGION } = process.env
 
   const isMethodReplayable = !['GET', 'OPTIONS', 'HEAD'].includes(method)
   const isReadOnlyRegion =
-    FLY_REGION && PRIMARY_REGION && FLY_REGION !== PRIMARY_REGION
+    typeof FLY_REGION === 'string' && FLY_REGION.length > 0 &&
+    typeof PRIMARY_REGION === 'string' && PRIMARY_REGION.length > 0 &&
+    FLY_REGION !== PRIMARY_REGION
 
   const shouldReplay = isMethodReplayable && isReadOnlyRegion
 
@@ -41,9 +43,9 @@ app.all('*', function getReplayResponse(req, res, next) {
     pathname,
     method,
     PRIMARY_REGION,
-    FLY_REGION,
+    FLY_REGION
   }
-  console.info(`Replaying:`, logInfo)
+  console.info('Replaying:', logInfo)
   res.set('fly-replay', `region=${PRIMARY_REGION}`)
   return res.sendStatus(409)
 })
@@ -56,7 +58,7 @@ app.disable('x-powered-by')
 // Remix fingerprints its assets so we can cache forever.
 app.use(
   '/build',
-  express.static('public/build', { immutable: true, maxAge: '1y' }),
+  express.static('public/build', { immutable: true, maxAge: '1y' })
 )
 
 // Everything else (like favicon.ico) is cached for an hour. You may want to be
@@ -72,17 +74,17 @@ app.all(
   '*',
   MODE === 'production'
     ? createRequestHandler({ build: require(BUILD_DIR) })
-    : (...args) => {
+    : (async (...args) => {
         purgeRequireCache()
         const requestHandler = createRequestHandler({
           build: require(BUILD_DIR),
-          mode: MODE,
+          mode: MODE
         })
-        return requestHandler(...args)
-      },
+        return await requestHandler(...args)
+      }) as RequestHandler
 )
 
-const port = process.env.PORT || 3000
+const port = process.env.PORT ?? '3000'
 
 app.listen(port, () => {
   // require the built app so we're ready when the first request comes in
@@ -90,7 +92,7 @@ app.listen(port, () => {
   baseLogger.info(`✅ app ready: http://localhost:${port}`)
 })
 
-function purgeRequireCache() {
+function purgeRequireCache (): void {
   // purge require cache on requests for "server side HMR" this won't let
   // you have in-memory objects between requests in development,
   // alternatively you can set up nodemon/pm2-dev to restart the server on
